@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI UniGuide - ค้นหาคณะที่ใช่ มหาวิทยาลัยที่ชอบ</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Chart.js for Radar Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-field {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+            outline: none;
+        }
+
+        .radio-card {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .radio-card:hover {
+            transform: translateY(-2px);
+            background: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+        }
+        .radio-card.selected {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
+        }
+        .animate-glow {
+            animation: pulse-glow 2s infinite;
+        }
+
+        .match-bar-fill {
+            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .uni-logo-shadow {
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 mb-2">
+                AI UniGuide <span class="text-white text-lg block md:inline font-normal mt-2 md:mt-0 opacity-80">PRO</span>
+            </h1>
+            <p class="text-slate-400">ระบบคัดกรองอัจฉริยะ ค้นหาคณะและมหาวิทยาลัยที่ "ตรงปก" ที่สุดสำหรับคุณ</p>
+        </header>
+
+        <!-- Main Form Section -->
+        <main id="assessmentForm" class="glass-panel rounded-2xl p-6 md:p-10 shadow-2xl relative overflow-hidden">
+            <!-- Progress Indicator -->
+            <div class="absolute top-0 left-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-300" id="progressBar" style="width: 0%"></div>
+
+            <form id="uniForm" onsubmit="handleFormSubmit(event)">
+                
+                <!-- Section 1: ข้อมูลพื้นฐาน -->
+                <div class="mb-8 border-b border-slate-700 pb-8">
+                    <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                        <span class="bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm mr-3">1</span>
+                        ข้อมูลพื้นฐาน (Profile)
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-slate-300 mb-2">สายการเรียนปัจจุบัน</label>
+                            <select id="strand" class="input-field w-full rounded-lg px-4 py-3 text-white" required>
+                                <option value="" disabled selected>-- เลือกสายการเรียน --</option>
+                                <option value="วิทย์-คณิต">วิทย์-คณิต</option>
+                                <option value="ศิลป์-คำนวณ">ศิลป์-คำนวณ</option>
+                                <option value="ศิลป์-ภาษา">ศิลป์-ภาษา</option>
+                                <option value="ศิลป์-ทั่วไป/สังคม">ไทย-สังคม / ทั่วไป</option>
+                                <option value="อาชีวะ/ปวช.">อาชีวะ / ปวช.</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-300 mb-2">เกรดเฉลี่ยสะสม (GPAX)</label>
+                            <select id="gpa" class="input-field w-full rounded-lg px-4 py-3 text-white" required>
+                                <option value="" disabled selected>-- เลือกช่วงเกรด --</option>
+                                <option value="3.50 - 4.00">3.50 - 4.00 (ยอดเยี่ยม)</option>
+                                <option value="3.00 - 3.49">3.00 - 3.49 (ดีมาก)</option>
+                                <option value="2.50 - 2.99">2.50 - 2.99 (ดี)</option>
+                                <option value="2.00 - 2.49">2.00 - 2.49 (พอใช้)</option>
+                                <option value="ต่ำกว่า 2.00">ต่ำกว่า 2.00</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: สไตล์และความชอบ -->
+                <div class="mb-8 border-b border-slate-700 pb-8">
+                    <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                        <span class="bg-purple-600 w-8 h-8 rounded-full flex items-center justify-center text-sm mr-3">2</span>
+                        ตัวตนของคุณ (Identity)
+                    </h2>
+
+                    <label class="block text-slate-300 mb-3">เมื่อเจอปัญหา คุณมักจะ...</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="radio-card border border-slate-700 rounded-lg p-4" onclick="selectRadio('style', 'Logic')">
+                            <input type="radio" name="style" value="Logic" class="hidden">
+                            <div class="font-bold text-blue-400 mb-1"><i class="fas fa-brain mr-2"></i>วิเคราะห์หาเหตุผล</div>
+                            <div class="text-sm text-slate-400">แยกแยะส่วนประกอบ ใช้ตรรกะแก้ปัญหา</div>
+                        </div>
+                        <div class="radio-card border border-slate-700 rounded-lg p-4" onclick="selectRadio('style', 'Social')">
+                            <input type="radio" name="style" value="Social" class="hidden">
+                            <div class="font-bold text-pink-400 mb-1"><i class="fas fa-users mr-2"></i>ขอคำปรึกษา/พูดคุย</div>
+                            <div class="text-sm text-slate-400">หาข้อมูลจากคนรอบข้าง ระดมสมอง</div>
+                        </div>
+                        <div class="radio-card border border-slate-700 rounded-lg p-4" onclick="selectRadio('style', 'Action')">
+                            <input type="radio" name="style" value="Action" class="hidden">
+                            <div class="font-bold text-green-400 mb-1"><i class="fas fa-hammer mr-2"></i>ลงมือทำทันที</div>
+                            <div class="text-sm text-slate-400">เรียนรู้จากการลองผิดลองถูกหน้างาน</div>
+                        </div>
+                        <div class="radio-card border border-slate-700 rounded-lg p-4" onclick="selectRadio('style', 'Creative')">
+                            <input type="radio" name="style" value="Creative" class="hidden">
+                            <div class="font-bold text-yellow-400 mb-1"><i class="fas fa-lightbulb mr-2"></i>คิดนอกกรอบ</div>
+                            <div class="text-sm text-slate-400">ใช้วิธีใหม่ๆ จินตนาการผลลัพธ์ที่แตกต่าง</div>
+                        </div>
+                    </div>
+
+                    <label class="block text-slate-300 mb-3">วิชาหรือทักษะที่คุณ "ถนัด" ที่สุด (เลือกได้หลายข้อ)</label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        <!-- Checkboxes -->
+                        <label class="flex items-center space-x-2 bg-slate-800 p-3 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-700">
+                            <input type="checkbox" name="skills" value="คณิตศาสตร์/คำนวณ" class="rounded text-blue-500 focus:ring-blue-500 bg-slate-900 border-slate-600">
+                            <span>คณิต/คำนวณ</span>
+                        </label>
+                        <label class="flex items-center space-x-2 bg-slate-800 p-3 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-700">
+                            <input type="checkbox" name="skills" value="ฟิสิกส์/วิทย์กายภาพ" class="rounded text-blue-500 focus:ring-blue-500 bg-slate-900 border-slate-600">
+                            <span>ฟิสิกส์/วิทย์</span>
+                        </label>
+                        <label class="flex items-center space-x-2 bg-slate-800 p-3 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-700">
+                            <input type="checkbox" name="skills" value="ชีวะ/เคมี" class="rounded text-blue-500 focus:ring-blue-500 bg-slate-900 border-slate-600">
+                            <span>ชีวะ/เคมี</span>
+                        </label>
+                        <label class="flex items-center space-x-2 bg-slate-800 p-3 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-700">
+                            <input type="checkbox" name="skills" value="ศิลปะ/ออกแบบ" class="rounded text-blue-500 focus:ring-blue-500 bg-slate-900 border-slate-600">
+                            <span>ศิลปะ/ออกแบบ</span>
+                        </label>
+                        <label class="flex items-center space-x-2 bg-slate-800 p-3 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-700">
+                            <input type="checkbox" name="skills" value="ภาษาต่างประเทศ" class="rounded text-blue-500 focus:ring-blue-500 bg-slate-900 border-slate-600">
+                            <span>ภาษา</span>
+                        </label>
+                        <label class="flex items-center space-x-2 bg-slate-800 p-3 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-700">
+                            <input type="checkbox" name="skills" value="คอมพิวเตอร์/เทคโนโลยี" class="rounded text-blue-500 focus:ring-blue-500 bg-slate-900 border-slate-600">
+                            <span>คอม/เทคโนฯ</span>
+                        </label>
+                        <label class="flex items-center space-x-2 bg-slate-800 p-3 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-700">
+                            <input type="checkbox" name="skills" value="พูด/เจรจา/ผู้นำ" class="rounded text-blue-500 focus:ring-blue-500 bg-slate-900 border-slate-600">
+                            <span>การพูด/ผู้นำ</span>
+                        </label>
+                        <label class="flex items-center space-x-2 bg-slate-800 p-3 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-700">
+                            <input type="checkbox" name="skills" value="กีฬา/ปฏิบัติ" class="rounded text-blue-500 focus:ring-blue-500 bg-slate-900 border-slate-600">
+                            <span>กีฬา/ปฏิบัติ</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Section 3: ปัจจัยเสริม (เพิ่มใหม่) -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                        <span class="bg-emerald-600 w-8 h-8 rounded-full flex items-center justify-center text-sm mr-3">3</span>
+                        เป้าหมายและปัจจัย (Factors & Goals)
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                        <div>
+                            <label class="block text-slate-300 mb-2">อาชีพที่ใฝ่ฝัน (ระบุสั้นๆ)</label>
+                            <input type="text" id="career" placeholder="เช่น โปรแกรมเมอร์, หมอ, นักการทูต, เจ้าของธุรกิจ" class="input-field w-full rounded-lg px-4 py-3 text-white placeholder-slate-500">
+                        </div>
+                        <div>
+                            <label class="block text-slate-300 mb-2">งบประมาณค่าเทอม (ต่อเทอม)</label>
+                            <select id="budget" class="input-field w-full rounded-lg px-4 py-3 text-white">
+                                <option value="Standard">หลักสูตรปกติ (10,000 - 25,000 บาท)</option>
+                                <option value="Moderate">ปานกลาง/ภาคพิเศษ (25,000 - 50,000 บาท)</option>
+                                <option value="High">หลักสูตรอินเตอร์/เอกชน (50,000+ บาท)</option>
+                                <option value="Flexible">ไม่จำกัดงบประมาณ</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <label class="block text-slate-300 mb-2">สิ่งแวดล้อมมหาลัยที่ชอบ</label>
+                    <select id="environment" class="input-field w-full rounded-lg px-4 py-3 text-white">
+                        <option value="City">ในเมือง ทันสมัย เดินทางสะดวก (เช่น จุฬาฯ, มศว)</option>
+                        <option value="Suburban">ชานเมือง พื้นที่กว้างขวาง ธรรมชาติ (เช่น ธรรมศาสตร์รังสิต, มหิดล)</option>
+                        <option value="Regional">ภูมิภาค บรรยากาศอบอุ่น เป็นกันเอง (เช่น มช., มข., มอ.)</option>
+                        <option value="Specialized">เน้นเทคโนโลยีและอุปกรณ์ทันสมัย (เช่น ลาดกระบัง, บางมด)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold py-4 rounded-xl shadow-lg transform transition hover:scale-[1.02] flex justify-center items-center">
+                    <i class="fas fa-rocket mr-2"></i> ประมวลผลและค้นหาคณะที่ใช่
+                </button>
+            </form>
+        </main>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden text-center py-20">
+            <div class="relative w-32 h-32 mx-auto mb-8">
+                <div class="absolute inset-0 border-4 border-blue-500/30 rounded-full animate-ping"></div>
+                <div class="absolute inset-2 border-4 border-cyan-400/50 rounded-full animate-spin"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <i class="fas fa-brain text-4xl text-white animate-pulse"></i>
+                </div>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2 animate-pulse">AI กำลังวิเคราะห์ข้อมูลของคุณ...</h2>
+            <p id="loadingText" class="text-slate-400">กำลังประมวลผลความเข้ากันได้...</p>
+        </div>
+
+        <!-- Result Section -->
+        <div id="resultSection" class="hidden space-y-8">
+            
+            <!-- Top Match Hero Card -->
+            <div class="glass-panel rounded-2xl p-1 shadow-2xl animate-glow bg-gradient-to-br from-blue-500 via-transparent to-cyan-500">
+                <div class="bg-slate-900/90 rounded-xl p-6 md:p-8 backdrop-blur-xl h-full">
+                    <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+                        <!-- Uni Logo & Rank -->
+                        <div class="flex-shrink-0 text-center relative">
+                            <div class="absolute -top-3 -left-3 bg-yellow-400 text-slate-900 font-bold px-3 py-1 rounded-lg text-xs shadow z-10">อันดับ #1</div>
+                            <div class="w-32 h-32 bg-white/10 rounded-xl p-2 flex items-center justify-center mb-2 overflow-hidden border border-white/20 mx-auto">
+                                <img id="topUniLogo" src="" alt="Uni Logo" class="w-full h-full object-contain uni-logo-shadow" onerror="this.src='https://placehold.co/200x200/1e293b/white?text=No+Logo'">
+                            </div>
+                            <span class="text-yellow-400 font-bold tracking-wider text-sm block mt-2">PERFECT MATCH</span>
+                        </div>
+                        
+                        <!-- Details -->
+                        <div class="flex-grow text-center md:text-left w-full">
+                            <h2 id="topUniName" class="text-3xl font-bold text-white mb-1">ชื่อมหาวิทยาลัย</h2>
+                            <h3 id="topFacultyName" class="text-xl text-blue-400 font-semibold mb-4">ชื่อคณะ/สาขา</h3>
+                            
+                            <p id="topReason" class="text-slate-300 text-sm leading-relaxed mb-6 bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                                คำอธิบายจาก AI ว่าทำไมที่นี่ถึงเหมาะกับผู้ใช้ที่สุด...
+                            </p>
+
+                            <!-- Match Stats -->
+                            <div class="flex flex-col md:flex-row gap-6 items-center">
+                                <div class="w-full md:w-1/2">
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-slate-400">ความเข้ากันได้ (Compatibility)</span>
+                                        <span id="topScoreText" class="text-green-400 font-bold">95%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-700 rounded-full h-3">
+                                        <div id="topScoreBar" class="bg-gradient-to-r from-green-400 to-emerald-600 h-3 rounded-full match-bar-fill" style="width: 0%"></div>
+                                    </div>
+                                    <div class="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-400">
+                                        <div class="bg-slate-800 p-2 rounded border border-slate-700">
+                                            <i class="fas fa-money-bill-wave text-green-400 mr-1"></i> ค่าเทอม: <span id="topTuition" class="text-white">-</span>
+                                        </div>
+                                        <div class="bg-slate-800 p-2 rounded border border-slate-700">
+                                            <i class="fas fa-briefcase text-blue-400 mr-1"></i> อาชีพ: <span id="topCareer" class="text-white">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="w-full md:w-1/2 h-40 flex justify-center">
+                                    <canvas id="topRadarChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Rankings -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="otherRankings">
+                <!-- Rank 2, 3, etc. will be injected here -->
+            </div>
+
+            <button onclick="resetForm()" class="block mx-auto mt-10 text-slate-400 hover:text-white underline transition-colors">
+                <i class="fas fa-redo mr-2"></i>ประเมินใหม่อีกครั้ง
+            </button>
+        </div>
+
+    </div>
+
+    <!-- JavaScript Implementation -->
+    <script>
+        // ==========================================
+        // ส่วนการตั้งค่า API KEY (ใส่ Key ของคุณตรงนี้)
+        // ==========================================
+        const API_KEY = 'AIzaSyBzFdWe3NFakXrmIKWLgJMOPwqms0UrB54'; // <-- ใส่ Gemini API Key ในช่องว่างนี้ เช่น 'AIzaSy...'
+
+        // --- UI Interactions ---
+        function selectRadio(name, value) {
+            document.querySelectorAll(`input[name="${name}"]`).forEach(el => {
+                el.parentElement.classList.remove('selected');
+                if(el.value === value) {
+                    el.checked = true;
+                    el.parentElement.classList.add('selected');
+                }
+            });
+        }
+
+        // --- Core Logic ---
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+
+            if (!API_KEY) {
+                alert('กรุณาใส่ API Key ในโค้ดก่อนใช้งาน (บรรทัดที่ ~278)');
+                return;
+            }
+            
+            // Gather Data
+            const formData = {
+                strand: document.getElementById('strand').value,
+                gpa: document.getElementById('gpa').value,
+                style: document.querySelector('input[name="style"]:checked')?.value,
+                skills: Array.from(document.querySelectorAll('input[name="skills"]:checked')).map(cb => cb.value),
+                career: document.getElementById('career').value,
+                budget: document.getElementById('budget').value,
+                environment: document.getElementById('environment').value
+            };
+
+            if (!formData.style || formData.skills.length === 0) {
+                alert('กรุณาตอบคำถามให้ครบทุกข้อ เพื่อความแม่นยำ');
+                return;
+            }
+
+            // UI State: Loading
+            document.getElementById('assessmentForm').classList.add('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
+
+            const loadingTexts = [
+                "กำลังวิเคราะห์ทักษะและเป้าหมายอาชีพ...",
+                "กำลังตรวจสอบงบประมาณและหลักสูตร...",
+                "กำลังดึงข้อมูลโลโก้มหาวิทยาลัย...",
+                "กำลังสรุปผลการจัดอันดับ..."
+            ];
+            let step = 0;
+            const textInterval = setInterval(() => {
+                if(step < loadingTexts.length) {
+                    document.getElementById('loadingText').innerText = loadingTexts[step++];
+                }
+            }, 1500);
+
+            try {
+                // Call AI
+                const result = await callGeminiAI(formData);
+                clearInterval(textInterval);
+                renderResults(result);
+            } catch (error) {
+                clearInterval(textInterval);
+                alert('เกิดข้อผิดพลาด: ' + error.message);
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('assessmentForm').classList.remove('hidden');
+            }
+        }
+
+        async function callGeminiAI(data) {
+            const prompt = `
+                Role: You are an expert education counselor for Thai High School students.
+                Task: Analyze the student profile and recommend the top 3 Thai Universities and Faculties that perfectly match them.
+                
+                Student Profile:
+                - Current Strand: ${data.strand}
+                - GPAX: ${data.gpa}
+                - Problem Solving Style: ${data.style}
+                - Strong Skills: ${data.skills.join(', ')}
+                - Dream Career: ${data.career}
+                - Tuition Budget Preference: ${data.budget}
+                - Preferred Environment: ${data.environment}
+
+                Output Requirement:
+                Return ONLY a raw JSON string (no markdown formatting). The JSON must be an ARRAY of 3 objects.
+                
+                Structure for each object:
+                {
+                    "rank": 1,
+                    "tier": "Tier Name (e.g., The Perfect Match, The Challenger, Hidden Gem)",
+                    "university": "University Name (Thai)",
+                    "website_domain": "university domain name for logo lookup (e.g., chula.ac.th, mahidol.ac.th, kmitl.ac.th)",
+                    "faculty": "Faculty/Major Name (Thai)",
+                    "match_score": 95,
+                    "reason": "Short explanation in Thai why this fits their style, career goal, and budget (approx 2 sentences).",
+                    "tuition_info": "Estimated Tuition Fee per term (Thai Baht)",
+                    "career_path": "One key career role relevant to this major",
+                    "stats": {
+                        "academic": 0-100,
+                        "creativity": 0-100,
+                        "practical": 0-100,
+                        "social": 0-100,
+                        "technology": 0-100
+                    }
+                }
+
+                Important: 
+                1. Ensure "website_domain" is correct as it will be used to fetch the logo.
+                2. If budget is 'Standard', avoid suggesting very expensive international programs unless it's a perfect match.
+            `;
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+
+            const json = await response.json();
+            
+            if (!response.ok) throw new Error(json.error?.message || 'API Error');
+
+            let text = json.candidates[0].content.parts[0].text;
+            // Clean markdown if present
+            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(text);
+        }
+
+        function renderResults(rankings) {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('resultSection').classList.remove('hidden');
+
+            const topMatch = rankings[0];
+
+            // Render Top Match
+            document.getElementById('topUniName').innerText = topMatch.university;
+            document.getElementById('topFacultyName').innerText = topMatch.faculty;
+            document.getElementById('topReason').innerText = topMatch.reason;
+            document.getElementById('topScoreText').innerText = topMatch.match_score + '%';
+            document.getElementById('topTuition').innerText = topMatch.tuition_info;
+            document.getElementById('topCareer').innerText = topMatch.career_path;
+            
+            // Set Logo with fallback
+            const logoUrl = `https://logo.clearbit.com/${topMatch.website_domain}?size=200`;
+            const logoImg = document.getElementById('topUniLogo');
+            logoImg.src = logoUrl;
+            logoImg.onerror = function() { this.src = 'https://placehold.co/200x200/1e293b/white?text=' + topMatch.university.charAt(0); };
+            
+            setTimeout(() => {
+                document.getElementById('topScoreBar').style.width = topMatch.match_score + '%';
+            }, 100);
+
+            // Render Radar Chart for Top Match
+            const ctx = document.getElementById('topRadarChart').getContext('2d');
+            
+            // Destroy existing chart if any to avoid overlay
+            if(window.myRadarChart) window.myRadarChart.destroy();
+
+            window.myRadarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['วิชาการ', 'ความคิดสร้างสรรค์', 'ปฏิบัติ', 'สังคม', 'เทคโนโลยี'],
+                    datasets: [{
+                        label: 'ความเข้ากันได้',
+                        data: [
+                            topMatch.stats.academic,
+                            topMatch.stats.creativity,
+                            topMatch.stats.practical,
+                            topMatch.stats.social,
+                            topMatch.stats.technology
+                        ],
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        pointBackgroundColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            pointLabels: { color: '#94a3b8', font: { size: 10 } },
+                            ticks: { display: false, max: 100 }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // Render Rank 2 & 3
+            const otherContainer = document.getElementById('otherRankings');
+            otherContainer.innerHTML = ''; // clear old results
+
+            rankings.slice(1).forEach((item, index) => {
+                const colors = index === 0 
+                    ? { border: 'border-pink-500', text: 'text-pink-400', badge: 'bg-pink-900/50 text-pink-300' }
+                    : { border: 'border-purple-500', text: 'text-purple-400', badge: 'bg-purple-900/50 text-purple-300' };
+
+                const itemLogoUrl = `https://logo.clearbit.com/${item.website_domain}?size=100`;
+
+                const html = `
+                    <div class="glass-panel rounded-xl p-6 border-t-4 ${colors.border} transform hover:translate-y-[-5px] transition-transform relative">
+                        <div class="absolute top-4 right-4 w-12 h-12 bg-white/10 rounded-full flex items-center justify-center overflow-hidden border border-white/10">
+                             <img src="${itemLogoUrl}" class="w-full h-full object-contain" onerror="this.src='https://placehold.co/100x100/1e293b/white?text=${index+2}'">
+                        </div>
+                        <div class="flex justify-between items-start mb-4 pr-16">
+                            <div>
+                                <span class="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-md ${colors.badge} mb-2 inline-block">
+                                    ${item.tier}
+                                </span>
+                                <h3 class="text-xl font-bold text-white">${item.university}</h3>
+                                <p class="${colors.text} font-medium">${item.faculty}</p>
+                            </div>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-4 border-l-2 border-slate-700 pl-3 min-h-[40px]">
+                            "${item.reason}"
+                        </p>
+                        
+                        <div class="flex items-center justify-between text-xs text-slate-500 mb-2">
+                             <span><i class="fas fa-coins mr-1"></i> ${item.tuition_info}</span>
+                             <span class="font-bold text-white text-lg">${item.match_score}%</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-2">
+                            <div class="bg-slate-500 h-2 rounded-full" style="width: ${item.match_score}%"></div>
+                        </div>
+                    </div>
+                `;
+                otherContainer.innerHTML += html;
+            });
+        }
+
+        function resetForm() {
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('assessmentForm').classList.remove('hidden');
+            document.getElementById('loadingState').classList.add('hidden');
+        }
+
+    </script>
+</body>
+</html>
