@@ -1,0 +1,22 @@
+{
+  "name": "ai-uniguide-pro",
+  "version": "1.0.0",
+  "description": "AI UniGuide Pro - University guide recommendation system",
+  "main": "api/chat.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^1.0.0"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "university",
+    "guide",
+    "ai",
+    "recommendation"
+  ],
+  "author": "",
+  "license": "ISC"
+}
