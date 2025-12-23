@@ -346,11 +346,6 @@
         // --- Core Logic ---
         async function handleFormSubmit(e) {
             e.preventDefault();
-
-            if (!API_KEY) {
-                alert('กรุณาใส่ API Key ในโค้ดก่อนใช้งาน');
-                return;
-            }
             
             // Gather Data
             const formData = {
