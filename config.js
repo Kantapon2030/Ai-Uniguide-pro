@@ -1,1 +1,0 @@
-const SECRET_API_KEY = "AIzaSyD9qyHp0NaVVvXqNvPjhbUwJE7Ty2psdyc";
